@@ -29,6 +29,32 @@
 #include "comm_can.h"
 #include <math.h>
 
+#ifdef P1_USE_LIMIT_SWITCH
+#define P1_TOP_LIMIT_SW_PORT GPIOA
+#define P1_TOP_LIMIT_SW_PIN 7
+#define P1_BOTTOM_LIMIT_SW_PORT GPIOA
+#define P1_BOTTOM_LIMIT_SW_PIN 6
+#define P1_LIMIT_SW_EN_PORT GPIOA
+#define P1_LIMIT_SW_EN_PIN 5
+
+static volatile bool limit_top;
+static volatile bool limit_bottom;
+static volatile bool limit_en;
+
+bool get_limit_sw_top(void) {
+	return limit_top;
+}
+
+bool get_limit_sw_bottom(void) {
+	return limit_bottom;
+}
+
+bool get_limit_sw_en(void) {
+	return limit_en;
+}
+
+#endif
+
 // Only available if servo output is not active
 #if !SERVO_OUT_ENABLE
 
@@ -114,6 +140,12 @@ static THD_FUNCTION(ppm_thread, arg) {
 
 	chRegSetThreadName("APP_PPM");
 	ppm_tp = chThdGetSelfX();
+
+#ifdef P1_USE_LIMIT_SWITCH
+	palSetPadMode(P1_TOP_LIMIT_SW_PORT, P1_TOP_LIMIT_SW_PIN, PAL_MODE_INPUT_PULLUP);
+	palSetPadMode(P1_BOTTOM_LIMIT_SW_PORT, P1_BOTTOM_LIMIT_SW_PIN, PAL_MODE_INPUT_PULLUP);
+	palSetPadMode(P1_LIMIT_SW_EN_PORT, P1_LIMIT_SW_EN_PIN, PAL_MODE_INPUT_PULLDOWN); // this input is connected to an RC switch
+#endif
 
 	servodec_set_pulse_options(config.pulse_start, config.pulse_end, config.median_filter);
 	servodec_init(servodec_func);
@@ -209,6 +241,26 @@ static THD_FUNCTION(ppm_thread, arg) {
 			utils_step_towards(&servo_val_ramp, servo_val, ramp_step);
 			servo_val = servo_val_ramp;
 		}
+
+#ifdef P1_USE_LIMIT_SWITCH
+		// Apply limit switch
+		limit_top = !palReadPad(P1_TOP_LIMIT_SW_PORT, P1_TOP_LIMIT_SW_PIN); // top and bottom switches use pulldown resistors
+		limit_bottom = !palReadPad(P1_BOTTOM_LIMIT_SW_PORT, P1_BOTTOM_LIMIT_SW_PIN);
+		limit_en = palReadPad(P1_LIMIT_SW_EN_PORT, P1_LIMIT_SW_EN_PIN);
+
+		if (limit_en) {
+			// if both limit switches are pushed, don't apply limiting; something bad has happened
+			if (limit_top && !limit_bottom) {
+				if (servo_val < 0.0) { // don't allow further downward motion
+					servo_val = 0.0;
+				}
+			} else if (limit_bottom && !limit_top) {
+				if (servo_val > 0.0) { // don't allow further upward motion
+					servo_val = 0.0;
+				}
+			}
+		}
+#endif
 
 		float current = 0;
 		bool current_mode = false;

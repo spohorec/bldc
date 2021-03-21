@@ -86,6 +86,13 @@ void terminal_process_string(char *str) {
 
 	if (strcmp(argv[0], "ping") == 0) {
 		commands_printf("pong\n");
+	} else if (strcmp(argv[0], "switches") == 0) {
+		bool top = get_limit_sw_top();
+		bool bottom = get_limit_sw_bottom();
+		bool en = get_limit_sw_en();
+		commands_printf("Limit switches: %s", en ? "enabled" : "disabled");
+		commands_printf("Limit switch top: %s", top ? "active" : "inactive");
+		commands_printf("Limit switch bottom: %s", bottom ? "active" : "inactive");
 	} else if (strcmp(argv[0], "stop") == 0) {
 		mc_interface_set_duty(0);
 		commands_printf("Motor stopped\n");
@@ -1061,6 +1068,9 @@ void terminal_process_string(char *str) {
 
 		commands_printf("stop");
 		commands_printf("  Stop the motor");
+
+		commands_printf("swtiches");
+		commands_printf("  Print the current status of the limit switches");
 
 		commands_printf("last_adc_duration");
 		commands_printf("  The time the latest ADC interrupt consumed");

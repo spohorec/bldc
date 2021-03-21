@@ -81,4 +81,11 @@ void app_custom_start(void);
 void app_custom_stop(void);
 void app_custom_configure(app_configuration *conf);
 
+// P1 stuff
+#ifdef P1_USE_LIMIT_SWITCH
+bool get_limit_sw_top(void);
+bool get_limit_sw_bottom(void);
+bool get_limit_sw_en(void);
+#endif
+
 #endif /* APP_H_ */

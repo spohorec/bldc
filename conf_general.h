@@ -20,11 +20,13 @@
 #ifndef CONF_GENERAL_H_
 #define CONF_GENERAL_H_
 
+#define P1_USE_LIMIT_SWITCH
+
 // Firmware version
 #define FW_VERSION_MAJOR			5
 #define FW_VERSION_MINOR			02
 // Set to 0 for building a release and iterate during beta test builds
-#define FW_TEST_VERSION_NUMBER		0
+#define FW_TEST_VERSION_NUMBER		1
 
 #include "datatypes.h"
 
